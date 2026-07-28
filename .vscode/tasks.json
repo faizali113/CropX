@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build frontend",
+			"type": "shell",
+			"command": "npm run build",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build frontend (bypass policy)",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -Command \"Set-Location 'C:\\Users\\faiza\\OneDrive\\Documents\\CropX\\frontend'; npm run build\"",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}
