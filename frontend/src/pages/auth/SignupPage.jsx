@@ -1,34 +1,61 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, Card, CardContent, Checkbox, Container, FormControlLabel, Grid, IconButton, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  InputAdornment,
+  LinearProgress,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import PageShell from '../../components/common/PageShell';
+import AuthShell from '../../components/common/AuthShell';
+import { getDashboardPath, ROLES } from '../../constants/roles';
+import { parseApiError } from '../../utils/errorParser';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
-const roleOptions = [
-  { value: 'FARMER', label: 'Farmer' },
-  { value: 'CUSTOMER', label: 'Customer' },
-  { value: 'ADMIN', label: 'Admin' },
+const ROLE_OPTIONS = [
+  { value: ROLES.FARMER, label: 'Farmer' },
+  { value: ROLES.CUSTOMER, label: 'Customer' },
+  { value: ROLES.ADMIN, label: 'Admin' },
 ];
 
+function getPasswordStrength(password) {
+  if (!password) return { score: 0, label: '', color: 'transparent' };
+  const strong =
+    password.length >= 12 &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+  if (strong) return { score: 100, label: 'Strong', color: '#22c55e' };
+  if (password.length >= 8) return { score: 60, label: 'Fair', color: '#f59e0b' };
+  return { score: 25, label: 'Weak', color: '#ef4444' };
+}
+
 export default function SignupPage() {
+  usePageTitle('Create account');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { register: createAccount } = useAuth();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm({ defaultValues: { role: 'CUSTOMER' } });
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { role: ROLES.CUSTOMER } });
 
   const password = watch('password', '');
-  const passwordStrength = useMemo(() => {
-    if (!password) return { label: 'Enter a password', score: 0 };
-    if (password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
-      return { label: 'Strong', score: 3 };
-    }
-    if (password.length >= 8) return { label: 'Fair', score: 2 };
-    return { label: 'Weak', score: 1 };
-  }, [password]);
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   const onSubmit = async (data) => {
     try {
@@ -39,63 +66,178 @@ export default function SignupPage() {
         password_confirm: data.password_confirm,
         role: data.role,
       });
-      const role = response.user?.role || data.role;
-      toast.success('Account created successfully. Welcome to CropX!');
-
-      if (role === 'FARMER') {
-        navigate('/farmer/dashboard');
-      } else if (role === 'ADMIN') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/customer/dashboard');
-      }
+      toast.success('Account created — welcome to CropX!');
+      navigate(getDashboardPath(response.user?.role ?? data.role), { replace: true });
     } catch (error) {
-      const message = error.response?.data?.email?.[0] || error.response?.data?.password_confirm?.[0] || error.response?.data?.detail || 'Unable to create account';
-      toast.error(message);
+      toast.error(parseApiError(error, 'Unable to create account.'));
     }
   };
 
   return (
-    <PageShell>
-      <Card elevation={0} sx={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #e8f5e9', maxWidth: 760, mx: 'auto' }}>
-        <CardContent sx={{ p: { xs: 3, md: 5 } }}>
-          <Typography variant="h4" fontWeight={800} color="#2E7D32" sx={{ mb: 1 }}>Create your account</Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>Join CropX as a farmer, customer, or admin and start your next step.</Typography>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField label="Full name" fullWidth {...register('name', { required: 'Name is required' })} error={Boolean(errors.name)} helperText={errors.name?.message} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Email" type="email" fullWidth {...register('email', { required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' } })} error={Boolean(errors.email)} helperText={errors.email?.message} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Password" type={showPassword ? 'text' : 'password'} fullWidth {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Minimum 8 characters' } })} error={Boolean(errors.password)} helperText={errors.password?.message} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">{showPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }} />
-                <Typography variant="body2" color={passwordStrength.score >= 3 ? 'success.main' : passwordStrength.score >= 2 ? 'warning.main' : 'text.secondary'} sx={{ mt: 1 }}>
-                  Password strength: {passwordStrength.label}
+    <AuthShell
+      title="Create your account"
+      subtitle="Join CropX as a farmer, customer, or admin."
+      wide
+    >
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Grid container spacing={2.5}>
+          {/* Name */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Full name"
+              fullWidth
+              autoComplete="name"
+              {...register('name', { required: 'Name is required' })}
+              error={Boolean(errors.name)}
+              helperText={errors.name?.message}
+            />
+          </Grid>
+
+          {/* Email */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Email address"
+              type="email"
+              fullWidth
+              autoComplete="email"
+              {...register('email', {
+                required: 'Email is required',
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' },
+              })}
+              error={Boolean(errors.email)}
+              helperText={errors.email?.message}
+            />
+          </Grid>
+
+          {/* Password */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              fullWidth
+              autoComplete="new-password"
+              {...register('password', {
+                required: 'Password is required',
+                minLength: { value: 8, message: 'Minimum 8 characters' },
+              })}
+              error={Boolean(errors.password)}
+              helperText={errors.password?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword((p) => !p)} edge="end">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {password && (
+              <Box sx={{ mt: 1 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={strength.score}
+                  sx={{
+                    height: 4,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(0,0,0,0.06)',
+                    '& .MuiLinearProgress-bar': { bgcolor: strength.color, borderRadius: 2 },
+                  }}
+                />
+                <Typography variant="caption" sx={{ color: strength.color, fontWeight: 600 }}>
+                  {strength.label}
                 </Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField label="Confirm Password" type={showConfirmPassword ? 'text' : 'password'} fullWidth {...register('password_confirm', { required: 'Confirm password is required', validate: (value) => value === watch('password') || 'Passwords do not match' })} error={Boolean(errors.password_confirm)} helperText={errors.password_confirm?.message} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowConfirmPassword((prev) => !prev)} edge="end">{showConfirmPassword ? <VisibilityOff /> : <Visibility />}</IconButton></InputAdornment> }} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField select label="Role" defaultValue="CUSTOMER" fullWidth {...register('role')}>
-                  {roleOptions.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel control={<Checkbox {...register('terms')} />} label="I agree to the terms and conditions" />
-              </Grid>
-            </Grid>
-            <Button type="submit" variant="contained" size="large" disabled={isSubmitting} sx={{ mt: 3, bgcolor: '#2E7D32', '&:hover': { bgcolor: '#256b28' } }}>
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
-            </Button>
-          </form>
-          <Typography sx={{ mt: 3 }}>
-            Already have an account? <Link to="/login" style={{ color: '#2E7D32', textDecoration: 'none' }}>Sign in</Link>
+              </Box>
+            )}
+          </Grid>
+
+          {/* Confirm password */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Confirm password"
+              type={showConfirm ? 'text' : 'password'}
+              fullWidth
+              autoComplete="new-password"
+              {...register('password_confirm', {
+                required: 'Please confirm your password',
+                validate: (v) => v === watch('password') || 'Passwords do not match',
+              })}
+              error={Boolean(errors.password_confirm)}
+              helperText={errors.password_confirm?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirm((p) => !p)} edge="end">
+                      {showConfirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+
+          {/* Role */}
+          <Grid item xs={12}>
+            <TextField
+              select
+              label="I am a…"
+              fullWidth
+              defaultValue={ROLES.CUSTOMER}
+              {...register('role')}
+            >
+              {ROLE_OPTIONS.map((o) => (
+                <MenuItem key={o.value} value={o.value}>
+                  {o.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {/* Terms */}
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={<Checkbox {...register('terms')} size="small" />}
+              label={
+                <Typography variant="body2" color="text.secondary">
+                  I agree to the{' '}
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    sx={{ color: 'primary.main', fontWeight: 600 }}
+                  >
+                    terms and conditions
+                  </Typography>
+                </Typography>
+              }
+            />
+          </Grid>
+        </Grid>
+
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          fullWidth
+          disabled={isSubmitting}
+          sx={{ mt: 3 }}
+        >
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
+      </form>
+
+      <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          Already have an account?{' '}
+          <Typography
+            component={Link}
+            to="/login"
+            variant="body2"
+            sx={{ color: 'primary.main', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+          >
+            Sign in
           </Typography>
-        </CardContent>
-      </Card>
-    </PageShell>
+        </Typography>
+      </Box>
+    </AuthShell>
   );
 }

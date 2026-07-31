@@ -7,42 +7,70 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Rehydrate auth state from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('accessToken');
-
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        // Corrupted storage — clear it
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
     }
     setLoading(false);
   }, []);
 
+  /**
+   * Sign in — accepts (email, password) or a pre-built payload object.
+   * Returns the full response data so callers can read `user.role`.
+   */
   const login = async (emailOrPayload, password) => {
-    const payload = typeof emailOrPayload === 'string' ? { email: emailOrPayload, password } : emailOrPayload;
+    const payload =
+      typeof emailOrPayload === 'string'
+        ? { email: emailOrPayload, password }
+        : emailOrPayload;
+
     const response = await api.post('/auth/login/', payload);
-    localStorage.setItem('accessToken', response.data.access);
-    localStorage.setItem('refreshToken', response.data.refresh);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    setUser(response.data.user);
+    const { access, refresh, user: userData } = response.data;
+
+    localStorage.setItem('accessToken', access);
+    localStorage.setItem('refreshToken', refresh);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+
     return response.data;
   };
 
+  /**
+   * Register a new account.
+   * Returns the full response data (includes `user.role` and tokens if issued).
+   */
   const register = async (payload) => {
     const response = await api.post('/auth/register/', payload);
-    if (response.data?.access && response.data?.refresh) {
-      localStorage.setItem('accessToken', response.data.access);
-      localStorage.setItem('refreshToken', response.data.refresh);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      setUser(response.data.user);
+    const { access, refresh, user: userData } = response.data;
+
+    if (access && refresh && userData) {
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     }
+
     return response.data;
   };
 
+  /**
+   * Sign out — blacklists the refresh token on the server then clears state.
+   */
   const logout = async () => {
     try {
       await api.post('/auth/logout/', { refresh: localStorage.getItem('refreshToken') });
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // Ignore errors — we always clear locally
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -51,11 +79,19 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading]);
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, loading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
 }

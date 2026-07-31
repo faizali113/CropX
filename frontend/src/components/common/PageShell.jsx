@@ -1,11 +1,14 @@
 import { Box, Container } from '@mui/material';
 import Navbar from './Navbar';
 
-export default function PageShell({ children }) {
+/**
+ * Generic public-page wrapper with sticky Navbar.
+ */
+export default function PageShell({ children, maxWidth = 'lg' }) {
   return (
-    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #F8FAF5 0%, #eef7eb 100%)' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      <Container maxWidth={maxWidth} sx={{ py: { xs: 4, md: 6 }, flex: 1 }}>
         {children}
       </Container>
     </Box>

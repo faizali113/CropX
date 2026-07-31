@@ -1,78 +1,153 @@
-import { Box, Button, Card, CardContent, Grid, Stack, Typography, Paper } from '@mui/material';
+import {
+  Box,
+  Button,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+  alpha,
+} from '@mui/material';
+import {
+  AddCircleOutlineOutlined,
+  AgricultureOutlined,
+  BarChartOutlined,
+  InboxOutlined,
+} from '@mui/icons-material';
 import DashboardLayout from '../../components/common/DashboardLayout';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
-const metrics = [
-  { label: 'Active plots', value: '14' },
-  { label: 'Harvest ready', value: '6' },
-  { label: 'Pending bookings', value: '3' },
-];
+/* ─── Empty-state card ────────────────────────────────────────────────────── */
+function EmptyState({ icon, title, description, action }) {
+  return (
+    <Paper
+      sx={{
+        p: 4,
+        borderRadius: 4,
+        border: '1.5px dashed',
+        borderColor: alpha('#2E7D32', 0.2),
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1.5,
+        bgcolor: alpha('#2E7D32', 0.02),
+      }}
+    >
+      <Box sx={{ color: alpha('#2E7D32', 0.4), fontSize: 0 }}>{icon}</Box>
+      <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+        {title}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 260 }}>
+        {description}
+      </Typography>
+      {action && (
+        <Box sx={{ mt: 0.5 }}>{action}</Box>
+      )}
+    </Paper>
+  );
+}
 
-const cards = [
-  { title: 'Farm Overview', description: 'Track crop health, field status, and upcoming activities.' },
-  { title: 'Harvest Planning', description: 'Coordinate batches, logistics, and pickups with confidence.' },
-  { title: 'Customer Requests', description: 'Monitor bookings and respond to incoming demand quickly.' },
-];
+/* ─── Stat card ───────────────────────────────────────────────────────────── */
+function StatCard({ icon, label, value }) {
+  return (
+    <Paper
+      sx={{
+        p: 3,
+        borderRadius: 4,
+        border: '1px solid',
+        borderColor: 'divider',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+      }}
+    >
+      <Box
+        sx={{
+          width: 48,
+          height: 48,
+          borderRadius: 3,
+          bgcolor: alpha('#2E7D32', 0.08),
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography variant="h5" fontWeight={800} color="primary.main">
+          {value ?? '—'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {label}
+        </Typography>
+      </Box>
+    </Paper>
+  );
+}
 
+/* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function FarmerDashboard() {
+  usePageTitle('Farmer Dashboard');
   const { user } = useAuth();
-  const navigate = useNavigate();
-
-  const handleAction = (action) => {
-    if (action === 'add') {
-      toast.info('Add Plot clicked — open the create plot screen.');
-      navigate('/profile');
-    }
-    if (action === 'booking') {
-      toast.info('New booking flow');
-      navigate('/profile');
-    }
-    if (action === 'reports') {
-      toast.info('Viewing reports');
-      navigate('/settings');
-    }
-  };
 
   return (
     <DashboardLayout>
-      <Stack spacing={3}>
-        <Paper elevation={1} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: { xs: 2, md: 3 } }}>
-            <Box>
-              <Typography variant="h4" fontWeight={800} color="#2E7D32">Farmer Dashboard</Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.5 }}>Welcome back, {user?.name || user?.email || 'farmer'}.</Typography>
-            </Box>
+      <Stack spacing={4}>
+        {/* Header */}
+        <Box>
+          <Typography variant="h4" fontWeight={800}>
+            Good day, {user?.name || 'farmer'} 👋
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+            Here's an overview of your farm operations.
+          </Typography>
+        </Box>
 
-            <Stack direction="row" spacing={1}>
-              <Button variant="outlined" onClick={() => handleAction('reports')}>View Reports</Button>
-              <Button variant="contained" onClick={() => handleAction('add')} sx={{ bgcolor: '#2E7D32', '&:hover': { bgcolor: '#256b28' } }}>Add Plot</Button>
-            </Stack>
-          </Box>
-        </Paper>
-
-        <Grid container spacing={2}>
-          {metrics.map((metric) => (
-            <Grid item xs={12} sm={4} key={metric.label}>
-              <Paper elevation={2} sx={{ borderRadius: 3, p: 2, textAlign: 'center' }}>
-                <Typography variant="h5" fontWeight={800} color="#2E7D32">{metric.value}</Typography>
-                <Typography color="text.secondary">{metric.label}</Typography>
-              </Paper>
+        {/* Stat cards — placeholders until real data is wired in */}
+        <Grid container spacing={2.5}>
+          {[
+            { icon: <AgricultureOutlined />, label: 'Active plots', value: null },
+            { icon: <BarChartOutlined />, label: 'Harvest ready', value: null },
+            { icon: <InboxOutlined />, label: 'Pending bookings', value: null },
+          ].map((s) => (
+            <Grid item xs={12} sm={4} key={s.label}>
+              <StatCard {...s} />
             </Grid>
           ))}
         </Grid>
 
-        <Grid container spacing={2}>
-          {cards.map((card) => (
-            <Grid item xs={12} md={4} key={card.title}>
-              <Paper elevation={1} sx={{ borderRadius: 3, p: 2, height: '100%' }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>{card.title}</Typography>
-                <Typography color="text.secondary">{card.description}</Typography>
-                <Button size="small" sx={{ mt: 2 }} onClick={() => toast.info(`${card.title} clicked`)}>Open</Button>
-              </Paper>
-            </Grid>
-          ))}
+        {/* Empty-state sections */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <EmptyState
+              icon={<AgricultureOutlined sx={{ fontSize: 48 }} />}
+              title="No plots yet"
+              description="Add your first plot to start tracking crop health and field status."
+              action={
+                <Button variant="contained" size="small" startIcon={<AddCircleOutlineOutlined />}>
+                  Add plot
+                </Button>
+              }
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <EmptyState
+              icon={<BarChartOutlined sx={{ fontSize: 48 }} />}
+              title="No harvest data"
+              description="Your harvest planning and batch logistics will appear here once plots are set up."
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <EmptyState
+              icon={<InboxOutlined sx={{ fontSize: 48 }} />}
+              title="No bookings"
+              description="Customer booking requests and order inquiries will show up here."
+            />
+          </Grid>
         </Grid>
       </Stack>
     </DashboardLayout>
