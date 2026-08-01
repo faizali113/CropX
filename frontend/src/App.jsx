@@ -17,7 +17,7 @@ import FarmerDashboard from './pages/dashboard/FarmerDashboard';
 import CustomerDashboard from './pages/dashboard/CustomerDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 
-// ── Farmer pages (all backend-connected) ────────────────────────────────────
+// ── Farmer pages ─────────────────────────────────────────────────────────────
 import FarmManager from './pages/farmer/FarmManager';
 import MyCrops from './pages/farmer/MyCrops';
 import Marketplace from './pages/farmer/Marketplace';
@@ -28,6 +28,7 @@ import Weather from './pages/farmer/Weather';
 import CropPrices from './pages/farmer/CropPrices';
 import Messages from './pages/farmer/Messages';
 import Notifications from './pages/farmer/Notifications';
+import FarmerBookings from './pages/farmer/FarmerBookings';
 
 // ── Customer pages ────────────────────────────────────────────────────────────
 import BrowseFarms from './pages/customer/BrowseFarms';
@@ -35,6 +36,7 @@ import CustomerMarketplace from './pages/customer/CustomerMarketplace';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import CustomerCropScanner from './pages/customer/CustomerCropScanner';
 import CustomerMessages from './pages/customer/CustomerMessages';
+import CustomerBookings from './pages/customer/CustomerBookings';
 
 // Shared
 import ProfilePage from './pages/ProfilePage';
@@ -65,9 +67,8 @@ function AppRoutes() {
         <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
-        {/* ── Protected ─────────────────────────────────────────────────── */}
+        {/* Protected */}
         <Route element={<ProtectedRoute />}>
-
           {/* Dashboards */}
           <Route path="/farmer/dashboard" element={<RoleBasedRoute allowedRoles={['FARMER']}><FarmerDashboard /></RoleBasedRoute>} />
           <Route path="/customer/dashboard" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerDashboard /></RoleBasedRoute>} />
@@ -78,6 +79,7 @@ function AppRoutes() {
           <Route path="/farmer/crops" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><MyCrops /></RoleBasedRoute>} />
           <Route path="/farmer/marketplace" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Marketplace /></RoleBasedRoute>} />
           <Route path="/farmer/orders" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Orders /></RoleBasedRoute>} />
+          <Route path="/farmer/bookings" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><FarmerBookings /></RoleBasedRoute>} />
           <Route path="/farmer/disease-scanner" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><DiseaseScanner /></RoleBasedRoute>} />
           <Route path="/farmer/fertilizer" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><FertilizerCenter /></RoleBasedRoute>} />
           <Route path="/farmer/weather" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Weather /></RoleBasedRoute>} />
@@ -89,6 +91,7 @@ function AppRoutes() {
           <Route path="/customer/farms" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><BrowseFarms /></RoleBasedRoute>} />
           <Route path="/customer/marketplace" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerMarketplace /></RoleBasedRoute>} />
           <Route path="/customer/orders" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerOrders /></RoleBasedRoute>} />
+          <Route path="/customer/bookings" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerBookings /></RoleBasedRoute>} />
           <Route path="/customer/scan" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerCropScanner /></RoleBasedRoute>} />
           <Route path="/customer/messages" element={<RoleBasedRoute allowedRoles={['CUSTOMER']}><CustomerMessages /></RoleBasedRoute>} />
 
@@ -100,7 +103,8 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss={false} pauseOnHover />
+      <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false}
+        newestOnTop closeOnClick pauseOnFocusLoss={false} pauseOnHover />
     </>
   );
 }

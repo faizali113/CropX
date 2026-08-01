@@ -4,6 +4,16 @@ Django settings for CropX backend.
 
 from datetime import timedelta
 from pathlib import Path
+import os
+
+# Load .env file if it exists (development convenience)
+_env_path = Path(__file__).resolve().parent.parent / '.env'
+if _env_path.exists():
+    for _line in _env_path.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _v = _line.split('=', 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -158,3 +168,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ---------------------------------------------------------------------------
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@cropx.local'
+
+# ---------------------------------------------------------------------------
+# AI & Weather API keys  (set these in your environment or .env file)
+# ---------------------------------------------------------------------------
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')

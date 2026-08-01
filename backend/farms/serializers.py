@@ -31,6 +31,7 @@ class CropSerializer(serializers.ModelSerializer):
 
 class MarketListingSerializer(serializers.ModelSerializer):
     farmer_name = serializers.CharField(source='farmer.name', read_only=True)
+    farmer_email = serializers.CharField(source='farmer.email', read_only=True)
 
     class Meta:
         model = MarketListing
@@ -117,4 +118,31 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    customer_email = serializers.CharField(source='customer.email', read_only=True)
+    farmer_name = serializers.CharField(source='farmer.name', read_only=True)
+    listing_crop = serializers.CharField(source='listing.crop_name', read_only=True)
+    listing_price = serializers.DecimalField(source='listing.price_per_kg', max_digits=8, decimal_places=2, read_only=True)
+
+    class Meta:
+        from .models import Booking
+        model = Booking
+        fields = (
+            'id', 'customer', 'customer_name', 'customer_email',
+            'farmer', 'farmer_name', 'listing', 'listing_crop', 'listing_price',
+            'quantity_kg', 'message', 'farmer_note', 'status',
+            'created_at', 'updated_at',
+        )
+        read_only_fields = ('id', 'customer', 'customer_name', 'customer_email',
+                            'farmer', 'farmer_name', 'listing_crop', 'listing_price',
+                            'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        listing = validated_data['listing']
+        validated_data['customer'] = self.context['request'].user
+        validated_data['farmer'] = listing.farmer
         return super().create(validated_data)

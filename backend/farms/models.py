@@ -231,3 +231,39 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.notification_type}: {self.title}"
+
+
+class Booking(models.Model):
+    """
+    A customer requests to book a farm/crop listing.
+    The farmer can Accept or Reject. Once accepted → status = BOOKED.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('BOOKED', 'Booked'),       # Farmer confirmed the deal
+        ('REJECTED', 'Rejected'),
+        ('CANCELLED', 'Cancelled'),
+        ('COMPLETED', 'Completed'),
+    ]
+
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_bookings'
+    )
+    farmer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='farmer_bookings'
+    )
+    listing = models.ForeignKey(
+        MarketListing, on_delete=models.CASCADE, related_name='bookings'
+    )
+    quantity_kg = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.TextField(blank=True, help_text='Negotiation message from customer')
+    farmer_note = models.TextField(blank=True, help_text='Response note from farmer')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Booking #{self.pk} — {self.customer.email} → {self.listing.crop_name} [{self.status}]"
