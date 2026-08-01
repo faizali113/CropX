@@ -1,0 +1,74 @@
+# ── Python / Django ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+htmlcov/
+.hypothesis/
+.pytest_cache/
+*.mo
+*.pot
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+*.log
+
+# Django media / static collected
+media/
+staticfiles/
+static_root/
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.envrc
+
+# ── Node / React ──────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+.npm
+.yarn/
+.pnp.*
+.eslintcache
+
+# ── Vite ──────────────────────────────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.iml
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.orig

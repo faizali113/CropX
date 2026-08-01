@@ -39,9 +39,18 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
+    # Third-party extras
+    'django_filters',
+
     # Local
     'authentication',
+    'farms',
 ]
+
+# Media files
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
