@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Farm, Crop, MarketListing, Order, DiseaseRecord, MarketPrice, Notification
+from .models import Farm, Crop, MarketListing, Order, DiseaseRecord, MarketPrice, Message, Notification
 from .serializers import (
     FarmSerializer, CropSerializer, MarketListingSerializer,
-    OrderSerializer, DiseaseRecordSerializer, MarketPriceSerializer, NotificationSerializer
+    OrderSerializer, DiseaseRecordSerializer, MarketPriceSerializer,
+    MessageSerializer, NotificationSerializer
 )
 from .permissions import IsFarmer, IsOwner
 
@@ -189,6 +190,52 @@ class MarketPriceHighlightsView(APIView):
         return Response({'results': data})
 
 
+# ── Messages ─────────────────────────────────────────────────────────────────
+class MessageThreadView(APIView):
+    """
+    GET  /api/messages/?with=<user_id>  — fetch conversation with a specific user
+    POST /api/messages/                 — send a message  { recipient, body }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        other_id = request.query_params.get('with')
+        if not other_id:
+            # Return list of unique conversation partners
+            from django.db.models import Q, Max
+            partners = (
+                Message.objects
+                .filter(Q(sender=request.user) | Q(recipient=request.user))
+                .values('sender', 'recipient')
+            )
+            seen = set()
+            result = []
+            for p in partners:
+                other = p['recipient'] if p['sender'] == request.user.id else p['sender']
+                if other not in seen:
+                    seen.add(other)
+                    result.append(other)
+            from authentication.models import User
+            from authentication.serializers import UserSerializer
+            users = User.objects.filter(pk__in=result)
+            return Response(UserSerializer(users, many=True).data)
+
+        from django.db.models import Q
+        messages = Message.objects.filter(
+            Q(sender=request.user, recipient_id=other_id) |
+            Q(sender_id=other_id, recipient=request.user)
+        ).order_by('created_at')
+        # Mark incoming as read
+        messages.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response(MessageSerializer(messages, many=True).data)
+
+    def post(self, request):
+        serializer = MessageSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 # ── Notifications ────────────────────────────────────────────────────────────
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
@@ -207,6 +254,26 @@ class NotificationMarkReadView(APIView):
         else:
             Notification.objects.filter(user=request.user).update(is_read=True)
         return Response({'status': 'ok'})
+
+
+# ── Customer Dashboard Stats ──────────────────────────────────────────────────
+class CustomerDashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        orders = Order.objects.filter(customer=user)
+        active_orders = orders.filter(status__in=['PENDING', 'ACCEPTED', 'PACKED', 'IN_TRANSIT']).count()
+        delivered = orders.filter(status='DELIVERED').count()
+        total_spent = sum(o.total_price for o in orders.filter(status='DELIVERED'))
+        active_listings = MarketListing.objects.filter(status='ACTIVE').count()
+        return Response({
+            'total_orders': orders.count(),
+            'active_orders': active_orders,
+            'delivered_orders': delivered,
+            'total_spent': float(total_spent),
+            'available_listings': active_listings,
+        })
 
 
 # ── Dashboard Stats ──────────────────────────────────────────────────────────

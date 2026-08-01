@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AppBar, Avatar, Badge, Box, Button, Container, Divider,
-  Drawer, IconButton, InputAdornment, List, ListItemButton,
-  ListItemIcon, ListItemText, Menu, MenuItem, Stack,
-  TextField, Toolbar, Typography, alpha,
+  Drawer, IconButton, List, ListItemButton, ListItemIcon,
+  ListItemText, Menu, MenuItem, Stack, Toolbar, Typography, alpha,
 } from '@mui/material';
 import {
   AgricultureOutlined, Close as CloseIcon, DarkMode,
   HelpOutlined, LightMode, LogoutOutlined,
-  Menu as MenuIcon, Message, NotificationsOutlined,
-  Person, Search, Settings, Storefront, ThermostatAuto,
+  Menu as MenuIcon, NotificationsOutlined, Person, Settings,
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useThemeToggle } from '../../context/ThemeContext';
 import { getDashboardPath } from '../../constants/roles';
 
 const publicLinks = [
@@ -23,9 +22,9 @@ const publicLinks = [
 export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [darkMode] = useState(false);
   const [avatarAnchor, setAvatarAnchor] = useState(null);
   const { user, logout } = useAuth();
+  const { toggleTheme, isDark } = useThemeToggle();   // ✅ real dark-mode toggle
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -50,22 +49,35 @@ export default function Navbar() {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : (user?.email?.[0] ?? 'U').toUpperCase();
 
-  const avatarMenuItems = [
-    { label: 'My Profile', icon: <Person fontSize="small" />, to: '/profile' },
-    { label: 'Farm Information', icon: <AgricultureOutlined fontSize="small" />, to: '/farmer/farms' },
-    { label: 'Account Settings', icon: <Settings fontSize="small" />, to: '/settings' },
-    { label: 'Help', icon: <HelpOutlined fontSize="small" />, to: '/' },
-  ];
+  const avatarMenuItems = user?.role === 'FARMER'
+    ? [
+        { label: 'My Profile', icon: <Person fontSize="small" />, to: '/profile' },
+        { label: 'Farm Information', icon: <AgricultureOutlined fontSize="small" />, to: '/farmer/farms' },
+        { label: 'Account Settings', icon: <Settings fontSize="small" />, to: '/settings' },
+        { label: 'Help', icon: <HelpOutlined fontSize="small" />, to: '/' },
+      ]
+    : [
+        { label: 'My Profile', icon: <Person fontSize="small" />, to: '/profile' },
+        { label: 'Account Settings', icon: <Settings fontSize="small" />, to: '/settings' },
+        { label: 'Help', icon: <HelpOutlined fontSize="small" />, to: '/' },
+      ];
 
   return (
     <>
-      <AppBar position="sticky" elevation={0} sx={{
-        bgcolor: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(248,250,245,0.92)',
-        backdropFilter: 'blur(20px)', color: 'text.primary',
-        borderBottom: '1px solid', borderColor: scrolled ? 'divider' : 'transparent',
-        transition: 'all 0.2s ease',
-        boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.06)' : 'none',
-      }}>
+      <AppBar
+        position="sticky" elevation={0}
+        sx={{
+          bgcolor: scrolled
+            ? (isDark ? 'rgba(13,27,14,0.97)' : 'rgba(255,255,255,0.97)')
+            : (isDark ? 'rgba(13,27,14,0.92)' : 'rgba(248,250,245,0.92)'),
+          backdropFilter: 'blur(20px)',
+          color: 'text.primary',
+          borderBottom: '1px solid',
+          borderColor: scrolled ? 'divider' : 'transparent',
+          transition: 'all 0.2s ease',
+          boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.08)' : 'none',
+        }}
+      >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ minHeight: { xs: 64, sm: 72 }, gap: 1 }}>
             {/* Logo */}
@@ -96,26 +108,33 @@ export default function Navbar() {
               {user ? (
                 <>
                   <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 1 }} />
-                  <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                    <ThermostatAuto fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                    <Badge badgeContent={3} color="error" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16 } }}>
+                  {/* Notification bell — badge count from API */}
+                  <IconButton size="small" component={Link} to={user.role === 'FARMER' ? '/farmer/notifications' : '/profile'} sx={{ color: 'text.secondary' }}>
+                    <Badge color="error" variant="dot" invisible={false} sx={{ '& .MuiBadge-dot': { width: 7, height: 7 } }}>
                       <NotificationsOutlined fontSize="small" />
                     </Badge>
                   </IconButton>
-                  <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                    <Message fontSize="small" />
+
+                  {/* Dark/light mode toggle — ✅ actually works */}
+                  <IconButton size="small" onClick={toggleTheme} sx={{ color: 'text.secondary' }} aria-label="Toggle dark mode">
+                    {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
                   </IconButton>
-                  <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                    {darkMode ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
-                  </IconButton>
+
+                  {/* Avatar opens dropdown */}
                   <IconButton size="small" onClick={e => setAvatarAnchor(e.currentTarget)} sx={{ p: 0.5 }}>
                     <Avatar sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 800 }}>{initials}</Avatar>
                   </IconButton>
                 </>
               ) : (
-                <Button component={Link} to="/signup" variant="contained" size="small" sx={{ ml: 1 }}>Get started</Button>
+                <>
+                  {/* Dark/light toggle on public pages too */}
+                  <IconButton size="small" onClick={toggleTheme} sx={{ color: 'text.secondary' }} aria-label="Toggle dark mode">
+                    {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+                  </IconButton>
+                  <Button component={Link} to="/signup" variant="contained" size="small" sx={{ ml: 1 }}>
+                    Get started
+                  </Button>
+                </>
               )}
             </Stack>
 
@@ -128,8 +147,10 @@ export default function Navbar() {
       </AppBar>
 
       {/* Avatar dropdown menu */}
-      <Menu anchorEl={avatarAnchor} open={Boolean(avatarAnchor)} onClose={() => setAvatarAnchor(null)}
-        PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' } }}>
+      <Menu
+        anchorEl={avatarAnchor} open={Boolean(avatarAnchor)} onClose={() => setAvatarAnchor(null)}
+        PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' } }}
+      >
         <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="body2" fontWeight={700}>{user?.name || user?.email}</Typography>
           <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
@@ -153,7 +174,12 @@ export default function Navbar() {
         <Box sx={{ p: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="h6" fontWeight={800}>Menu</Typography>
-            <IconButton onClick={() => setDrawerOpen(false)}><CloseIcon /></IconButton>
+            <Stack direction="row" spacing={0.5}>
+              <IconButton size="small" onClick={toggleTheme}>
+                {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+              </IconButton>
+              <IconButton onClick={() => setDrawerOpen(false)}><CloseIcon /></IconButton>
+            </Stack>
           </Stack>
           <Divider sx={{ mb: 1 }} />
           <List disablePadding>
@@ -167,7 +193,8 @@ export default function Navbar() {
                 <ListItemText primary="Log out" primaryTypographyProps={{ fontWeight: 600 }} />
               </ListItemButton>
             ) : (
-              <ListItemButton component={Link} to="/signup" onClick={() => setDrawerOpen(false)} sx={{ borderRadius: 2, bgcolor: alpha('#2E7D32', 0.08), color: 'primary.main', mt: 1 }}>
+              <ListItemButton component={Link} to="/signup" onClick={() => setDrawerOpen(false)}
+                sx={{ borderRadius: 2, bgcolor: alpha('#2E7D32', 0.08), color: 'primary.main', mt: 1 }}>
                 <ListItemText primary="Get started" primaryTypographyProps={{ fontWeight: 700 }} />
               </ListItemButton>
             )}

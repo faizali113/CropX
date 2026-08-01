@@ -17,7 +17,7 @@ import FarmerDashboard from './pages/dashboard/FarmerDashboard';
 import CustomerDashboard from './pages/dashboard/CustomerDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 
-// Farmer pages
+// Farmer pages (backend-connected only)
 import FarmManager from './pages/farmer/FarmManager';
 import MyCrops from './pages/farmer/MyCrops';
 import Marketplace from './pages/farmer/Marketplace';
@@ -26,8 +26,7 @@ import DiseaseScanner from './pages/farmer/DiseaseScanner';
 import FertilizerCenter from './pages/farmer/FertilizerCenter';
 import Weather from './pages/farmer/Weather';
 import CropPrices from './pages/farmer/CropPrices';
-import Analytics from './pages/farmer/Analytics';
-import Reports from './pages/farmer/Reports';
+// Analytics and Reports removed — were 100% hardcoded with no backend connection
 import Messages from './pages/farmer/Messages';
 import Notifications from './pages/farmer/Notifications';
 
@@ -76,8 +75,6 @@ function AppRoutes() {
           <Route path="/farmer/fertilizer" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><FertilizerCenter /></RoleBasedRoute>} />
           <Route path="/farmer/weather" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Weather /></RoleBasedRoute>} />
           <Route path="/farmer/crop-prices" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><CropPrices /></RoleBasedRoute>} />
-          <Route path="/farmer/analytics" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Analytics /></RoleBasedRoute>} />
-          <Route path="/farmer/reports" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Reports /></RoleBasedRoute>} />
           <Route path="/farmer/messages" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Messages /></RoleBasedRoute>} />
           <Route path="/farmer/notifications" element={<RoleBasedRoute allowedRoles={['FARMER','ADMIN']}><Notifications /></RoleBasedRoute>} />
 

@@ -194,6 +194,25 @@ class MarketPrice(models.Model):
         return f"{self.crop_name} - {self.market_name} @ ₹{self.price_per_quintal}"
 
 
+class Message(models.Model):
+    """Direct messages between any two users (farmer ↔ customer)."""
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages'
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages'
+    )
+    body = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.sender.email} → {self.recipient.email}: {self.body[:40]}"
+
+
 class Notification(models.Model):
     TYPE_CHOICES = [
         ('ORDER', 'Order'), ('WEATHER', 'Weather'), ('MARKET', 'Market'),

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Farm, Crop, MarketListing, Order, DiseaseRecord, MarketPrice, Notification
+from .models import Farm, Crop, MarketListing, Order, DiseaseRecord, MarketPrice, Message, Notification
 
 
 class FarmSerializer(serializers.ModelSerializer):
@@ -97,3 +97,24 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = '__all__'
         read_only_fields = ('user', 'created_at')
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source='sender.name', read_only=True)
+    sender_email = serializers.CharField(source='sender.email', read_only=True)
+    recipient_name = serializers.CharField(source='recipient.name', read_only=True)
+    recipient_email = serializers.CharField(source='recipient.email', read_only=True)
+
+    class Meta:
+        model = Message
+        fields = (
+            'id', 'sender', 'sender_name', 'sender_email',
+            'recipient', 'recipient_name', 'recipient_email',
+            'body', 'is_read', 'created_at',
+        )
+        read_only_fields = ('id', 'sender', 'sender_name', 'sender_email',
+                            'recipient_name', 'recipient_email', 'created_at')
+
+    def create(self, validated_data):
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)
