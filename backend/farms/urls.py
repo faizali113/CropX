@@ -9,7 +9,7 @@ from .views import (
     MessageThreadView,
     NotificationListView, NotificationMarkReadView,
     DashboardStatsView, CustomerDashboardStatsView,
-    CropScanView, AIInsightsView, WeatherView,
+    CropScanView, AIInsightsView, FarmerAIInsightsView, WeatherView,
     BookingListCreateView, BookingDetailView, PublicFarmListView,
 )
 
@@ -60,5 +60,6 @@ urlpatterns = [
     # AI & Weather (Step 4)
     path('ai/scan/', CropScanView.as_view(), name='ai-crop-scan'),
     path('ai/insights/', AIInsightsView.as_view(), name='ai-insights'),
+    path('ai/farmer-insights/', FarmerAIInsightsView.as_view(), name='ai-farmer-insights'),
     path('weather/', WeatherView.as_view(), name='weather'),
 ]

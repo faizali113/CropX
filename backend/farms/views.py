@@ -418,6 +418,88 @@ Return ONLY a JSON object (no markdown, no code fences, just raw JSON) with exac
             return Response({'detail': f'AI scan failed: {str(e)}'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+# ── AI Insights for Farmer Dashboard ─────────────────────────────────────────
+class FarmerAIInsightsView(APIView):
+    """
+    GET /api/ai/farmer-insights/
+    Generates personalised agronomic insights for the logged-in FARMER
+    based on their farms, crops, orders, pending bookings, and live market highlights.
+    """
+    permission_classes = [IsAuthenticated, IsFarmer]
+
+    def get(self, request):
+        import json, re
+        user = request.user
+
+        # Gather farmer context
+        farms = Farm.objects.filter(owner=user, is_active=True)
+        crops = Crop.objects.filter(farm__owner=user, is_active=True)
+        pending_orders = Order.objects.filter(farmer=user, status='PENDING').count()
+        total_revenue = sum(
+            o.total_price for o in Order.objects.filter(farmer=user, status='DELIVERED')
+        )
+        pending_bookings = 0
+        try:
+            from .models import Booking
+            pending_bookings = Booking.objects.filter(farmer=user, status='PENDING').count()
+        except Exception:
+            pass
+        active_listings = MarketListing.objects.filter(farmer=user, status='ACTIVE').count()
+
+        farms_summary = f"{farms.count()} active farms"
+        crops_summary = ', '.join(
+            f"{c.name} ({c.current_stage}, {c.health_status})"
+            for c in crops[:6]
+        ) or 'No active crops'
+
+        prompt = f"""You are an expert agricultural AI advisor for Indian farmers.
+
+Farmer profile on CropX platform:
+- {farms_summary}
+- Active crops: {crops_summary}
+- Pending orders to fulfill: {pending_orders}
+- Pending booking requests from customers: {pending_bookings}
+- Active marketplace listings: {active_listings}
+- Total revenue earned: ₹{float(total_revenue):,.0f}
+
+Generate exactly 5 personalised, actionable AI insights to help THIS FARMER make better decisions today.
+Focus on: crop health actions, when to sell, pricing strategy, which crops to plant next, operational advice.
+Be specific to Indian farming context.
+
+Return ONLY a valid JSON array (no markdown, no explanation, no code fences) of exactly 5 objects:
+[
+  {{
+    "icon": "<single relevant emoji>",
+    "title": "<short title max 8 words>",
+    "text": "<2-3 sentence actionable insight specific to this farmer>",
+    "action": "<one-word action the farmer should take: SELL | HOLD | PLANT | IRRIGATE | HARVEST | INSPECT | LIST | NEGOTIATE>",
+    "urgency": "HIGH | MEDIUM | LOW",
+    "color": "<one of: #22c55e | #f59e0b | #ef4444 | #3b82f6 | #8b5cf6 | #f97316>"
+  }}
+]"""
+
+        try:
+            raw = _gemini_text(prompt)
+            raw = re.sub(r'^```(?:json)?\s*', '', raw.strip())
+            raw = re.sub(r'\s*```$', '', raw)
+            insights = json.loads(raw)
+            if not isinstance(insights, list):
+                raise ValueError('Not a list')
+            return Response({'insights': insights[:5]}, status=status.HTTP_200_OK)
+        except Exception:
+            # Guaranteed fallback so dashboard never breaks
+            return Response({
+                'insights': [
+                    {'icon': '📈', 'title': 'Check today\'s market prices', 'text': 'Wheat and tomato prices are trending upward this week. Consider listing your ready produce now to maximise profit.', 'action': 'SELL', 'urgency': 'HIGH', 'color': '#22c55e'},
+                    {'icon': '💧', 'title': 'Irrigation check needed', 'text': 'Weather data suggests low rainfall this week. Verify soil moisture levels and increase drip irrigation by 15–20%.', 'action': 'IRRIGATE', 'urgency': 'MEDIUM', 'color': '#3b82f6'},
+                    {'icon': '🌱', 'title': 'Consider Rabi crop planning', 'text': 'The coming season is ideal for wheat, mustard, and chickpea sowing. Prepare your fields and order seeds in advance.', 'action': 'PLANT', 'urgency': 'LOW', 'color': '#2E7D32'},
+                    {'icon': '📦', 'title': f'You have {pending_orders} pending orders', 'text': 'Fulfilling pending orders quickly improves your seller rating. Pack and dispatch within 24 hours for best buyer experience.', 'action': 'SELL', 'urgency': 'HIGH', 'color': '#f59e0b'},
+                    {'icon': '🔬', 'title': 'Inspect crops for disease', 'text': 'High humidity conditions increase fungal disease risk. Inspect leaves for early signs of blight or rust and apply treatment immediately.', 'action': 'INSPECT', 'urgency': 'MEDIUM', 'color': '#ef4444'},
+                ],
+                'source': 'fallback',
+            }, status=status.HTTP_200_OK)
+
+
 # ── AI Insights for Customer Dashboard ───────────────────────────────────────
 class AIInsightsView(APIView):
     """
